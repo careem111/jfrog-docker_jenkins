@@ -7,6 +7,12 @@ pipeline{
     }
 
     stages{
+        stage ('Clone') {
+            steps {
+                git branch: 'main', url: "https://github.com/careem111/jfrog-docker_jenkins.git"
+            }
+        }
+
         stage ('Artifactory configuration') {
             steps {
                 rtServer (
