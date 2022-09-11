@@ -7,18 +7,43 @@ pipeline{
     }
 
     stages{
-        stage('build'){
-            steps{
-                sh 'mvn clean install'
-            }
-        }
-        stage('upload to artifactory'){
-
+        stage ('Artifactory configuration') {
             steps {
-                sh 'jf rt upload --url http://192.168.0.104:8082/artifactory/ --access-token ${ARTIFACTORY_ACCESS_TOKEN} valaxy/'
+                rtServer (
+                    id: "ARTIFACTORY_SERVER",
+                    url: 'http://192.168.0.104:8082/artifactory',
+                    credentialsId: '${ARTIFACTORY_ACCESS_TOKEN}'
+                )
+
+                rtMavenDeployer (
+                    id: "MAVEN_DEPLOYER",
+                    serverId: "ARTIFACTORY_SERVER",
+                    releaseRepo: 'libs-release-local',
+                    snapshotRepo: 'libs-snapshot-local'
+                )
+
+            }
+        }
+        stage ('Exec Maven') {
+            steps {
+                rtMavenRun (
+                    tool: MAVEN_TOOL, // Tool name from Jenkins configuration
+                    pom: 'workspace/valaxy-jfrog/webapp/pom.xml',
+                    goals: 'clean install',
+                    deployerId: "MAVEN_DEPLOYER",
+
+                )
             }
         }
 
+        stage ('Publish build info') {
+            steps {
+                rtPublishBuildInfo (
+                    serverId: "ARTIFACTORY_SERVER"
+                )
+            }
+
+        }
     }
 
     }
